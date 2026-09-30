@@ -240,6 +240,32 @@
     return ((title || "web").replace(/[\\/:*?"<>|]/g, "_")).slice(0, 60) + ".epub";
   }
 
+  // ===== 图片压缩：大图重编码为 JPEG（最长边 1568 / 质量 0.72）=====
+  // 背景：后端走腾讯云 SCF 函数 URL，平台限制请求体约 6MB；EPUB base64 后塞进 JSON，
+  //       因此 EPUB 原始体积须控制在 ~4.5MB 以内，多图页面不压缩必超限（RequestTooLarge）。
+  const IMG_COMPRESS_OVER = 300 * 1024; // 超过 300KB 才压（小图标/截图保持原样）
+  const IMG_MAX_DIM = 1568;             // Kindle 300ppi 屏幕已足够清晰
+  const IMG_JPEG_Q = 0.72;
+  async function compressImage(r) {
+    if (!r || !r.bytes || r.bytes.length <= IMG_COMPRESS_OVER) return r;
+    try {
+      if (typeof createImageBitmap === "undefined") return r;
+      const blob = new Blob([r.bytes], { type: r.ext === "png" ? "image/png" : "image/jpeg" });
+      const bmp = await createImageBitmap(blob);
+      const scale = Math.min(1, IMG_MAX_DIM / Math.max(bmp.width, bmp.height));
+      const w = Math.max(1, Math.round(bmp.width * scale));
+      const h = Math.max(1, Math.round(bmp.height * scale));
+      const cv = document.createElement("canvas");
+      cv.width = w; cv.height = h;
+      cv.getContext("2d").drawImage(bmp, 0, 0, w, h);
+      if (bmp.close) bmp.close();
+      const out = await new Promise(function (res) { cv.toBlob(res, "image/jpeg", IMG_JPEG_Q); });
+      cv.width = 0; cv.height = 0; // 立即释放画布内存
+      if (!out || !out.size || out.size >= r.bytes.length) return r; // 压不小就保留原图
+      return { ext: "jpg", bytes: new Uint8Array(await out.arrayBuffer()) };
+    } catch (e) { return r; }
+  }
+
   // ===== 在【当前页面】下载（最可靠）=====
   function triggerDownload(epubBytes, filename) {
     const blob = new Blob([epubBytes], { type: "application/epub+zip" });
@@ -357,12 +383,12 @@
     });
   }
 
-  // 判断是否为「体积过大」类错误：后端 413，或平台层 413/502（请求体超限）
+  // 判断是否为「体积过大」类错误：后端 413，或平台层 RequestTooLarge/413/502（请求体超限）
   function isTooLarge(res) {
     if (!res) return false;
     if (res.status === 413) return true;
     const t = (res.error || "") + " " + (res.data && res.data.message ? res.data.message : "");
-    return /413|过大|payload too large|too large|body.{0,4}large/i.test(t);
+    return /413|过大|toolarge|too large|payload too large|body.{0,4}large/i.test(t);
   }
 
   // 在网页内浮层提示（移动端无 popup 时也能看到反馈）
@@ -422,7 +448,7 @@
         post({ type: "XHS_PROGRESS", text: _i("prog_fetch_img", String(imgBlocks.length)) });
         await Promise.all(imgBlocks.map(async (b) => {
           const r = await withTimeout(fetchImageBytes(b.src), FETCH_TIMEOUT_MS);
-          if (r) { b.ext = r.ext; b.bytes = r.bytes; ok++; }
+          if (r) { const c = await compressImage(r); b.ext = c.ext; b.bytes = c.bytes; ok++; }
           else { b._skip = true; fail++; }
         }));
         blocks = blocks.filter((b) => !(b.type === "img" && b._skip));
@@ -433,7 +459,7 @@
       post({ type: "XHS_PROGRESS", text: includeImages
         ? _i("prog_img_done", [String(ok), String(fail)])
         : _i("prog_text_epub") });
-      const epub = makeEpub(content.title || _i("web_default"), blocks);
+      let epub = makeEpub(content.title || _i("web_default"), blocks);
 
       if (mode === "download") {
         triggerDownload(epub, safeName(content.title));
@@ -457,6 +483,22 @@
           return;
         }
         post({ type: "XHS_PROGRESS", text: _i("prog_sending") });
+        // 体积预算：SCF 平台限制请求体约 6MB，EPUB base64 后须 <4.5MB。
+        // 超预算时从最大的图开始逐张剔除重打，尽量保留最多内容。
+        if (includeImages) {
+          const SEND_BUDGET = 3.5 * 1024 * 1024;
+          let guard = 0;
+          while (epub.length > SEND_BUDGET && guard++ < 60) {
+            let mi = -1, ms = 0;
+            for (let i = 0; i < blocks.length; i++) {
+              const b = blocks[i];
+              if (b.type === "img" && b.bytes && b.bytes.length > ms) { ms = b.bytes.length; mi = i; }
+            }
+            if (mi < 0) break;
+            blocks.splice(mi, 1);
+            epub = makeEpub(content.title || _i("web_default"), blocks);
+          }
+        }
         const payload = {
           smtp_user: creds.smtpUser,
           smtp_password: creds.smtpPass,
