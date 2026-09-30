@@ -1,0 +1,37 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  width: 320px;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+  font-size: 13px; color: #222; background: #f6f6f8;
+}
+.card { padding: 14px 14px 12px; }
+.head { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; }
+.dot { width: 14px; height: 14px; border-radius: 50%; background: #ff2442; box-shadow: 0 0 0 4px rgba(255,36,66,.12); flex: none; }
+.t1 { font-size: 15px; font-weight: 700; }
+.t2 { font-size: 11px; color: #9a9a9a; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.head-mid { flex: 1; min-width: 0; }
+button.lang { flex: none; padding: 3px 10px; font-size: 11px; font-weight: 700; color: #666; background: #fff; border: 1px solid #e4e4ea; border-radius: 999px; cursor: pointer; }
+button.lang:hover { color: #ff2442; border-color: #ff2442; }
+label { display: block; font-size: 12px; color: #555; margin: 10px 0 5px; font-weight: 600; }
+input {
+  width: 100%; padding: 9px 10px; font-size: 13px;
+  border: 1px solid #ececf0; border-radius: 9px; background: #fafafa; outline: none;
+}
+input:focus { border-color: #ff2442; background: #fff; }
+.btns { display: flex; gap: 8px; margin-top: 13px; }
+button { flex: 1; padding: 11px; font-size: 13px; font-weight: 600; border: none; border-radius: 20px; cursor: pointer; }
+button.pri { color: #fff; background: #ff2442; }
+button.sec { color: #ff2442; background: #fff; border: 1px solid #ff2442; }
+button.share { color: #2b6cff; background: #fff; border: 1px solid #2b6cff; }
+button.full { width: 100%; }
+.cfg { border: 1px solid #ececf0; border-radius: 10px; padding: 10px; margin-bottom: 4px; background: #fff; }
+.cfg-t { font-size: 12px; font-weight: 700; color: #333; margin-bottom: 8px; }
+.divider { height: 1px; background: #ececf0; margin: 12px 0; }
+button:disabled { opacity: .5; cursor: default; }
+.status { margin-top: 11px; font-size: 12px; line-height: 1.55; padding: 9px 10px; border-radius: 9px; display: none; }
+.status.show { display: block; }
+.status.info { background: #eef4ff; color: #2b6cff; }
+.status.ok { background: #eafaf1; color: #07a35a; }
+.status.err { background: #fdecec; color: #e02020; }
+.tip { margin-top: 11px; font-size: 11px; color: #9a9a9a; line-height: 1.6; border-top: 1px solid #ececf0; padding-top: 10px; white-space: pre-line; }

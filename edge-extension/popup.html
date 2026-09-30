@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="card">
+    <div class="head">
+      <span class="dot"></span>
+      <div class="head-mid">
+        <div class="t1" data-i18n="popup_title">网页转 Kindle</div>
+        <div class="t2" id="pageTitle">读取中…</div>
+      </div>
+      <button id="langToggle" class="lang" title="切换语言 / Language">EN</button>
+    </div>
+
+    <div class="cfg">
+      <div class="cfg-t" data-i18n="cfg_title">自动发送到 Kindle（需部署后端）</div>
+      <label data-i18n="lbl_backend">后端地址</label>
+      <input id="backend" type="text" data-i18n-ph="ph_backend" placeholder="https://1305482411-6z3u3re2yl.ap-guangzhou.tencentscf.com" autocomplete="off" />
+      <label data-i18n="lbl_smtpUser">信任邮箱（发件 / SMTP 账号）</label>
+      <input id="smtpUser" type="text" data-i18n-ph="ph_smtpUser" placeholder="123456@qq.com" autocomplete="off" />
+      <label data-i18n="lbl_smtpPass">邮箱授权码（非登录密码）</label>
+      <input id="smtpPass" type="password" data-i18n-ph="ph_smtpPass" placeholder="在邮箱设置里获取授权码" autocomplete="off" />
+      <label data-i18n="lbl_kindle">亚马逊 Kindle 邮箱（收件人）</label>
+      <input id="kindle" type="text" data-i18n-ph="ph_kindle" placeholder="你的推送邮箱@kindle.cn" autocomplete="off" />
+      <div class="btns" style="margin-top:10px;">
+        <button id="send" class="pri full" data-i18n="btn_send">生成并发送到 Kindle</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="btns">
+      <button id="downloadImg" class="pri" data-i18n="btn_img">图文下载</button>
+      <button id="downloadText" class="sec" data-i18n="btn_text">纯文字下载</button>
+    </div>
+    <div class="btns" style="margin-top:8px;">
+      <button id="share" class="share" data-i18n="btn_share">生成并分享到邮箱</button>
+    </div>
+
+    <div id="status" class="status"></div>
+
+    <div class="tip" data-i18n="tip_text">本地生成 EPUB；点「发送到 Kindle」会由后端用信任邮箱把 EPUB 作为附件发到亚马逊（已内置免费共享后端，也可换成你自己的后端）。
+首次：把信任邮箱加入 Amazon「认可发件人」；QQ/163 等需在邮箱设置开启 SMTP 并获取授权码（不是登录密码）。
+授权码仅存于本机扩展配置，不会上传。</div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

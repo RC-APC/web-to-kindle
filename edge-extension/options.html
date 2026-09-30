@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <div class="wrap">
+    <div class="head">
+      <span class="dot"></span>
+      <div class="head-mid">
+        <div class="t1" data-i18n="opt_title">网页转 Kindle · 设置</div>
+      </div>
+      <button id="langToggle" class="lang" title="切换语言 / Language">EN</button>
+    </div>
+
+    <div class="cfg">
+      <label data-i18n="lbl_backend">后端地址</label>
+      <input id="backend" type="text" data-i18n-ph="ph_backend" placeholder="https://1305482411-6z3u3re2yl.ap-guangzhou.tencentscf.com" autocomplete="off" />
+      <label data-i18n="lbl_smtpUser">信任邮箱（发件 / SMTP 账号）</label>
+      <input id="smtpUser" type="text" data-i18n-ph="ph_smtpUser" placeholder="123456@qq.com" autocomplete="off" />
+      <label data-i18n="lbl_smtpPass">邮箱授权码（非登录密码）</label>
+      <input id="smtpPass" type="password" data-i18n-ph="ph_smtpPass" placeholder="在邮箱设置里获取授权码" autocomplete="off" />
+      <label data-i18n="lbl_kindle">亚马逊 Kindle 邮箱（收件人）</label>
+      <input id="kindle" type="text" data-i18n-ph="ph_kindle" placeholder="你的推送邮箱@kindle.cn" autocomplete="off" />
+      <button id="save" class="pri full" data-i18n="btn_save">保存配置</button>
+    </div>
+
+    <div id="status" class="status"></div>
+
+    <div class="tip" data-i18n="opt_tip">手机 Edge：扩展详情页 → 设置，打开本页填一次即可。配置只存于本机扩展，不会上传开发者；桌面与手机各自独立保存。</div>
+  </div>
+  <script src="options.js"></script>
+</body>
+</html>

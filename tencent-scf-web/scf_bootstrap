@@ -1,0 +1,16 @@
+#!/bin/bash
+# SCF Web 函数启动脚本：要求可执行权限(755/777)、LF 换行、python 用绝对路径
+PY=""
+# 优先带版本号的解释器（3.10 镜像里 /var/lang/python3 可能仍指向旧 3.6）
+for p in /var/lang/python310/bin/python3 /var/lang/python3.10/bin/python3 \
+         /var/lang/python39/bin/python3 /var/lang/python37/bin/python3 \
+         /var/lang/python36/bin/python3 /var/lang/python3/bin/python3 \
+         /usr/local/bin/python3 /usr/bin/python3; do
+  if [ -x "$p" ]; then PY="$p"; break; fi
+done
+if [ -z "$PY" ]; then
+  echo "python3 not found" >&2
+  exit 1
+fi
+echo "bootstrap using: $PY ($("$PY" -V 2>&1))" >&2
+exec "$PY" -u app.py
