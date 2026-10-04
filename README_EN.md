@@ -50,6 +50,32 @@ Open 👉 https://microsoftedge.microsoft.com/addons/detail/bokmelgompgkjjgplnhp
 
 ---
 
+## How to fill & save the configuration (read this)
+
+"Auto push" needs **4 config fields**. These are **stored only on your device** and are never uploaded.
+
+| Field | What it is | Default |
+| --- | --- | --- |
+| Backend address | URL of the SMTP relay backend (pre-filled with the free shared backend — usually leave it as-is) | `https://1305482411-6z3u3re2yl.ap-guangzhou.tencentscf.com` |
+| From email | your SMTP / sender account, e.g. `123456@qq.com` | empty |
+| Auth code | the **app password** from your mailbox settings (**not your login password**) | empty |
+| Kindle address | Amazon "Send to Kindle" address, e.g. `xxx@kindle.cn` | empty |
+
+### Where to fill it in
+
+- **Desktop Edge / Chrome**: click the "Web to Kindle" toolbar icon → the config panel is at the **top of the popup** (red border, titled "① Fill & save configuration").
+- **Edge for Android**: type `edge://extensions` in the address bar → tap the extension's "Details" → "Extension options" (mobile has no toolbar popup, so this is the only entry).
+
+### How to save it (v1.1.6+)
+
+- There is a prominent **red "Save configuration" button** at the bottom of the panel — click it to save, and a green "✓ Configuration saved" toast appears.
+- Fields **auto-save as you type**, so closing the popup won't lose your input.
+- Once saved, reopening shows "✓ Configuration saved — ready to send".
+
+> Tip: only "Auto push" needs these fields. **Download** and **Share to email** work out of the box without a backend or auth code.
+
+---
+
 ## Backend
 
 By default the extension generates the EPUB locally and uses your own mail client, so a backend isn't required. The "auto push" mode needs an SMTP relay backend:
@@ -115,4 +141,4 @@ Endpoints:
 
 ## License
 
-[MIT](LICENSE) © 2026  (RC-APC)
+[MIT](LICENSE) © 2026 阮聪 (RC-APC)
