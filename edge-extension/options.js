@@ -49,6 +49,17 @@ function applyLang(lang) {
   if (lt) { lt.textContent = LANG === "zh" ? "EN" : "中"; lt.title = LANG === "zh" ? "Switch to English" : "切换到中文"; }
 }
 
+function saveAll() {
+  var backend = $("backend").value.trim().replace(/\/+$/, "");
+  if (backend && !/^https?:\/\//i.test(backend)) backend = "https://" + backend;
+  chrome.storage.local.set({
+    backend: backend,
+    smtpUser: $("smtpUser").value.trim(),
+    smtpPass: $("smtpPass").value,
+    kindleEmail: $("kindle").value.trim()
+  });
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   chrome.storage.local.get(["backend", "smtpUser", "smtpPass", "kindleEmail", "ui_lang"], function (s) {
     applyLang(s.ui_lang || "zh");
@@ -56,20 +67,19 @@ document.addEventListener("DOMContentLoaded", function () {
     $("smtpUser").value = s.smtpUser || "";
     $("smtpPass").value = s.smtpPass || "";
     $("kindle").value = s.kindleEmail || "";
+    if (s.backend || s.smtpUser || s.smtpPass || s.kindleEmail) setStatus(I18N[LANG].saved, "ok");
   });
   $("langToggle").addEventListener("click", function () {
     var next = LANG === "zh" ? "en" : "zh";
     chrome.storage.local.set({ ui_lang: next });
     applyLang(next);
   });
+  // 输入框随手输入即自动保存
+  ["backend", "smtpUser", "smtpPass", "kindle"].forEach(function (id) {
+    $(id).addEventListener("input", saveAll);
+  });
   $("save").addEventListener("click", function () {
-    var backend = $("backend").value.trim().replace(/\/+$/, "");
-    if (backend && !/^https?:\/\//i.test(backend)) backend = "https://" + backend;
-    chrome.storage.local.set({
-      backend: backend,
-      smtpUser: $("smtpUser").value.trim(),
-      smtpPass: $("smtpPass").value,
-      kindleEmail: $("kindle").value.trim()
-    }, function () { setStatus(I18N[LANG].saved, "ok"); });
+    saveAll();
+    setStatus(I18N[LANG].saved, "ok");
   });
 });

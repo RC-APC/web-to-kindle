@@ -16,7 +16,7 @@
     </div>
 
     <div class="cfg">
-      <div class="cfg-t" data-i18n="cfg_title">自动发送到 Kindle（需部署后端）</div>
+      <div class="cfg-t" data-i18n="cfg_title">① 填写并保存配置（长期保存，下次免填）</div>
       <label data-i18n="lbl_backend">后端地址</label>
       <input id="backend" type="text" data-i18n-ph="ph_backend" placeholder="https://1305482411-6z3u3re2yl.ap-guangzhou.tencentscf.com" autocomplete="off" />
       <label data-i18n="lbl_smtpUser">信任邮箱（发件 / SMTP 账号）</label>
@@ -25,14 +25,18 @@
       <input id="smtpPass" type="password" data-i18n-ph="ph_smtpPass" placeholder="在邮箱设置里获取授权码" autocomplete="off" />
       <label data-i18n="lbl_kindle">亚马逊 Kindle 邮箱（收件人）</label>
       <input id="kindle" type="text" data-i18n-ph="ph_kindle" placeholder="你的推送邮箱@kindle.cn" autocomplete="off" />
-      <div class="btns" style="margin-top:10px;">
-        <button id="send" class="pri full" data-i18n="btn_send">生成并发送到 Kindle</button>
+      <div class="btns" style="margin-top:12px;">
+        <button id="saveCfg" class="pri full" data-i18n="btn_save">保存配置</button>
       </div>
+      <div id="saveHint" class="save-hint" data-i18n="save_auto">填写过程中已自动保存 ✓</div>
     </div>
 
     <div class="divider"></div>
 
     <div class="btns">
+      <button id="send" class="pri full" data-i18n="btn_send">生成并发送到 Kindle</button>
+    </div>
+    <div class="btns" style="margin-top:8px;">
       <button id="downloadImg" class="pri" data-i18n="btn_img">图文下载</button>
       <button id="downloadText" class="sec" data-i18n="btn_text">纯文字下载</button>
     </div>

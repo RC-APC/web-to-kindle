@@ -160,8 +160,14 @@
 
   // ===== 提取正文（在页面上下文执行）=====
   const MAX_BLOCKS = 2500; // 巨型 SPA（MSN 等）防护：块数封顶，避免遍历/生成 EPUB 卡死
+  const IS_WEIXIN = /weixin\.(qq|sogou)\.com$/i.test(location.hostname); // 微信公众号文章（含搜狗镜像）
   function extractContent() {
     function pick() {
+      // 微信公众号文章：正文在 #js_content，比 .rich_media_content 更干净（不含文末二维码/在看）
+      if (IS_WEIXIN) {
+        const js = document.getElementById("js_content");
+        if (js) return js;
+      }
       return document.querySelector("article") ||
         document.querySelector('[role="main"]') ||
         document.querySelector(".article-body, .post-content, .article-content, .article, .content, #article, .rich_media_content");
@@ -223,7 +229,7 @@
       }
       try {
         chrome.runtime.sendMessage(
-          { type: "XHS_FETCH_IMG", url: url, referer: location.origin },
+          { type: "XHS_FETCH_IMG", url: url, referer: IS_WEIXIN ? location.href : location.origin },
           function (resp) {
             if (chrome.runtime.lastError || !resp || !resp.ok) { resolve(null); return; }
             const bin = atob(resp.b64);
@@ -391,18 +397,62 @@
     return /413|过大|toolarge|too large|payload too large|body.{0,4}large/i.test(t);
   }
 
-  // 在网页内浮层提示（移动端无 popup 时也能看到反馈）
-  function showToast(text) {
+  // 在网页内浮层提示（右击 / 移动端无 popup 时也能看到反馈）
+  // type: "info"(处理中) | "success"(成功) | "error"(失败)
+  let _toastRoot = null;
+  function _toastRootEl() {
+    if (!_toastRoot) {
+      _toastRoot = document.createElement("div");
+      _toastRoot.style.cssText =
+        "position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:2147483647;" +
+        "display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;max-width:88vw;";
+      (document.body || document.documentElement).appendChild(_toastRoot);
+    }
+    return _toastRoot;
+  }
+  function showToast(text, type) {
     try {
+      const palette = {
+        info:    "background:rgba(34,34,34,.92);",
+        success: "background:rgba(22,135,68,.96);",
+        error:   "background:rgba(200,45,45,.96);"
+      };
       const d = document.createElement("div");
       d.textContent = text;
-      d.style.cssText = "position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:2147483647;" +
-        "background:rgba(34,34,34,.92);color:#fff;padding:10px 14px;border-radius:8px;" +
-        "font:14px/1.5 -apple-system,system-ui,sans-serif;max-width:84%;text-align:center;" +
-        "box-shadow:0 2px 12px rgba(0,0,0,.35)";
-      (document.body || document.documentElement).appendChild(d);
-      setTimeout(function () { d.remove(); }, 5000);
+      d.style.cssText = (palette[type] || palette.info) +
+        "color:#fff;padding:10px 14px;border-radius:8px;" +
+        "font:14px/1.5 -apple-system,system-ui,sans-serif;max-width:84vw;text-align:center;" +
+        "box-shadow:0 2px 12px rgba(0,0,0,.35);opacity:0;transition:opacity .2s ease;";
+      _toastRootEl().appendChild(d);
+      requestAnimationFrame(function () { d.style.opacity = "1"; });
+      const ttl = (type === "error") ? 6000 : 4000;
+      setTimeout(function () {
+        d.style.opacity = "0";
+        setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 260);
+      }, ttl);
     } catch (e) { /* 忽略 */ }
+  }
+
+  // 是否开着工具栏 popup：开着时由 popup 自己反馈，避免重复；关着（右击/移动端）才在页面内弹。
+  function popupOpen() {
+    try {
+      return !!(chrome.extension && chrome.extension.getViews &&
+        chrome.extension.getViews({ type: "popup" }).length);
+    } catch (e) { return false; }
+  }
+  // 页面内提示（已按 popup 开合做去重）
+  function pageNotify(text, type) {
+    try { if (popupOpen()) return; } catch (e) { /* 默认弹 */ }
+    showToast(text, type);
+  }
+  // 统一回报：进度走 popup；完成/出错同时回到 popup 并在页面内弹 toast。
+  function reportDone(ok, message) {
+    post({ type: "XHS_DONE", ok: ok, message: message });
+    pageNotify(message, ok ? "success" : "error");
+  }
+  function reportError(message) {
+    post({ type: "XHS_ERROR", message: message });
+    pageNotify(message, "error");
   }
 
   // ===== 预滚动：SPA 懒加载页（MSN/知乎等）图片进入视口才会填真实地址，抓图前先滚一遍 =====
@@ -431,15 +481,16 @@
   async function run(mode, kindleEmail, includeImages, creds) {
     // 看门狗：整个流程 90s 内必须结束，否则报错，绝不无限卡死
     let watchdog = setTimeout(function () {
-      post({ type: "XHS_DONE", ok: false, message: _i("err_timeout") });
+      reportDone(false, _i("err_timeout"));
     }, 90000);
     try {
       post({ type: "XHS_PROGRESS", text: _i("prog_read") });
+      pageNotify(_i("prog_read"), "info");
       if (includeImages) await scrollLazy();
       const content = extractContent();
       let blocks = content.blocks || [];
       if (!blocks.length) {
-        post({ type: "XHS_DONE", ok: false, message: _i("err_no_content") });
+        reportDone(false, _i("err_no_content"));
         return;
       }
       let ok = 0, fail = 0;
@@ -463,26 +514,20 @@
 
       if (mode === "download") {
         triggerDownload(epub, safeName(content.title));
-        post({ type: "XHS_DONE", ok: true, message: includeImages
+        reportDone(true, includeImages
           ? _i("done_img_download", String(ok))
-          : _i("done_text_download") });
+          : _i("done_text_download"));
       } else if (mode === "share") {
         const used = await shareEpub(epub, content.title, kindleEmail);
-        post({
-          type: "XHS_DONE",
-          ok: true,
-          message: used
-            ? _i("done_share")
-            : _i("done_share_fallback")
-        });
+        reportDone(true, used ? _i("done_share") : _i("done_share_fallback"));
       } else if (mode === "send") {
         if (!creds.backend || !creds.smtpUser || !creds.smtpPass || !kindleEmail) {
           const tip = _i("tip_mobile_cfg");
-          showToast(tip);
-          post({ type: "XHS_DONE", ok: false, message: tip });
+          reportDone(false, tip);
           return;
         }
         post({ type: "XHS_PROGRESS", text: _i("prog_sending") });
+        pageNotify(_i("prog_sending"), "info");
         // 体积预算：SCF 平台限制请求体约 6MB，EPUB base64 后须 <4.5MB。
         // 超预算时从最大的图开始逐张剔除重打，尽量保留最多内容。
         if (includeImages) {
@@ -520,20 +565,18 @@
             epub_base64: bytesToBase64(textEpub)
           }, creds.backend);
           if (res.ok && res.data) {
-            post({ type: "XHS_DONE", ok: true,
-              message: _i("done_too_large") });
+            reportDone(true, _i("done_too_large"));
             return;
           }
         }
         if (res.ok && res.data) {
-          post({ type: "XHS_DONE", ok: true,
-            message: _i("done_sent", kindleEmail) });
+          reportDone(true, _i("done_sent", kindleEmail));
         } else {
-          post({ type: "XHS_DONE", ok: false, message: _i("err_send", res.error || _i("unknown_err")) });
+          reportDone(false, _i("err_send", res.error || _i("unknown_err")));
         }
       }
     } catch (e) {
-      post({ type: "XHS_ERROR", message: (e && e.message) ? e.message : String(e) });
+      reportError((e && e.message) ? e.message : String(e));
     } finally {
       clearTimeout(watchdog);
     }

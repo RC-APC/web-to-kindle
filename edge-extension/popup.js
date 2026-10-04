@@ -10,7 +10,11 @@ const I18N = {
   zh: {
     popup_title: "网页转 Kindle",
     reading: "读取中…",
-    cfg_title: "自动发送到 Kindle（内置免费后端）",
+    cfg_title: "① 填写并保存配置（长期保存，下次免填）",
+    btn_save: "保存配置",
+    save_auto: "填写过程中已自动保存 ✓",
+    save_saved: "✓ 配置已保存，可直接发送",
+    save_ok: "配置已保存 ✓ 以后直接点发送即可",
     lbl_backend: "后端地址",
     ph_backend: "https://1305482411-6z3u3re2yl.ap-guangzhou.tencentscf.com",
     lbl_smtpUser: "信任邮箱（发件 / SMTP 账号）",
@@ -39,7 +43,11 @@ const I18N = {
   en: {
     popup_title: "Web to Kindle",
     reading: "Reading…",
-    cfg_title: "Auto-send to Kindle (with built-in free backend)",
+    cfg_title: "① Fill & save your config (saved for next time)",
+    btn_save: "Save config",
+    save_auto: "Auto-saved as you type ✓",
+    save_saved: "✓ Config saved, ready to send",
+    save_ok: "Config saved ✓ just tap Send",
     lbl_backend: "Backend URL",
     ph_backend: "https://1305482411-6z3u3re2yl.ap-guangzhou.tencentscf.com",
     lbl_smtpUser: "From email (SMTP account)",
@@ -87,6 +95,19 @@ function resetButtons() {
   var s = $("send"); if (s) s.disabled = false;
 }
 
+// 保存配置到 chrome.storage.local；strong=true 时额外弹出成功提示
+function saveConfig(strong) {
+  var backend = $("backend").value.trim().replace(/\/+$/, "");
+  if (backend && !/^https?:\/\//i.test(backend)) backend = "https://" + backend;
+  var smtpUser = $("smtpUser").value.trim();
+  var smtpPass = $("smtpPass").value;
+  var kindle = $("kindle").value.trim();
+  chrome.storage.local.set({ backend: backend, smtpUser: smtpUser, smtpPass: smtpPass, kindleEmail: kindle });
+  var hint = $("saveHint");
+  if (hint) { hint.style.display = "block"; hint.textContent = T("save_auto"); }
+  if (strong) setStatus(T("save_ok"), "ok");
+}
+
 function applyLang(lang) {
   LANG = (lang === "en") ? "en" : "zh";
   document.documentElement.lang = LANG === "zh" ? "zh-CN" : "en";
@@ -111,6 +132,12 @@ document.addEventListener("DOMContentLoaded", function () {
     $("smtpUser").value = s.smtpUser || "";
     $("smtpPass").value = s.smtpPass || "";
     $("kindle").value = s.kindleEmail || PRESET_KINDLE;
+    // 已配置过时，直接提示"已保存"，让用户安心
+    var hint = $("saveHint");
+    if (hint && (s.backend || s.smtpUser || s.smtpPass || s.kindleEmail)) {
+      hint.style.display = "block";
+      hint.textContent = T("save_saved");
+    }
   });
   $("langToggle").addEventListener("click", function () {
     var next = LANG === "zh" ? "en" : "zh";
@@ -137,6 +164,12 @@ document.addEventListener("DOMContentLoaded", function () {
   $("downloadText").addEventListener("click", function () { doAction("download", false); });
   $("share").addEventListener("click", function () { doAction("share", true); });
   $("send").addEventListener("click", function () { doAction("send", true); });
+  // 显式「保存配置」按钮
+  $("saveCfg").addEventListener("click", function () { saveConfig(true); });
+  // 输入框随手输入即自动保存，避免"填了没点按钮就关掉"导致丢失
+  ["backend", "smtpUser", "smtpPass", "kindle"].forEach(function (id) {
+    $(id).addEventListener("input", function () { saveConfig(false); });
+  });
 });
 
 function doAction(mode, includeImages) {
