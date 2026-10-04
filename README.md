@@ -174,4 +174,4 @@
 
 ## 许可证
 
-[MIT](LICENSE) © 2026 阮聪 (RC-APC)
+[MIT](LICENSE) © 2026 (RC-APC)
